@@ -10,6 +10,7 @@ import 'notification_service.dart';
 import 'calendar_note_model.dart';
 import 'add_note_dialog.dart';
 import 'relapse_dialog.dart';
+import 'export_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,7 +93,7 @@ class _MyAppState extends State<MyApp> {
           _calendarNotes = loadedNotes;
         });
       } catch (e) {
-        print('Ошибка загрузки заметок: $e');
+        debugPrint('Ошибка загрузки заметок: $e');
       }
     }
   }
@@ -224,6 +225,36 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> with SingleTick
   List<Habit> get _goodHabits => widget.habits.where((h) => h.type == HabitType.good).toList();
   List<Habit> get _badHabits => widget.habits.where((h) => h.type == HabitType.bad).toList();
 
+  Future<void> _exportData() async {
+  try {
+    final path = await ExportService.exportToText(
+      habits: widget.habits,
+      notes: widget.calendarNotes,
+    );
+    
+    if (path != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Экспорт сохранен:\n$path'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } else {
+      throw Exception('Экспорт не удался');
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Ошибка при экспорте'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
   @override
   void initState() {
     super.initState();
@@ -279,6 +310,11 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> with SingleTick
       appBar: AppBar(
         title: const Text('Трекер привычек'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.file_download),
+            onPressed: _exportData,
+            tooltip: 'Экспорт данных',
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: () {
