@@ -69,7 +69,7 @@ class _MyAppState extends State<MyApp> {
           }
         }
       } catch (e) {
-        print('Ошибка загрузки: $e');
+        debugPrint('Ошибка загрузки: $e');
         _createSampleHabits();
       }
     } else {
@@ -171,6 +171,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Трекер привычек',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
@@ -1256,7 +1257,7 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> with SingleTick
             child: Container(
               width: MediaQuery.of(context).size.width * 0.9,
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.85,
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
               ),
               child: SingleChildScrollView(
                 child: Padding(
