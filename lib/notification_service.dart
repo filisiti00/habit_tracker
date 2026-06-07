@@ -1,6 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'habit_model.dart';
 
 class NotificationService {
@@ -12,8 +12,7 @@ class NotificationService {
 
   Future<void> init() async {
     // Инициализируем временные зоны
-    tz.initializeTimeZones();
-
+    tz_data.initializeTimeZones();
     
     // Настройки для Android
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -31,10 +30,7 @@ class NotificationService {
     );
     
     await _notifications.initialize(settings);
-    
   }
-
-  
 
   // Запросить разрешение на уведомления
   Future<void> requestPermissions() async {
@@ -47,57 +43,42 @@ class NotificationService {
         ?.requestPermissions();
   }
 
-  // Запланировать уведомление для привычки
-  Future<void> scheduleNotification(Habit habit) async {
-    if (!habit.hasReminder || habit.reminderTime == null) return;
-    
-    // Отменяем старые уведомления для этой привычки
-    await cancelNotification(habit.id);
-    
-    final now = DateTime.now();
-    var scheduledTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      habit.reminderTime!.hour,
-      habit.reminderTime!.minute,
-    );
-    
-    // Если время уже прошло сегодня, планируем на завтра
-    if (scheduledTime.isBefore(now)) {
-      scheduledTime = scheduledTime.add(const Duration(days: 1));
-    }
-    
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'habit_channel',
-      'Напоминания о привычках',
-      channelDescription: 'Напоминания о привычках',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
-    
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-    
-    await _notifications.zonedSchedule(
-      int.parse(habit.id),
-      'Напоминание о привычке',
-      'Не забудьте: ${habit.name} ${habit.type == HabitType.good ? "✅" : "🚫"}',
-      tz.TZDateTime.from(scheduledTime, tz.local),
-      details,
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
-  }
+
+Future<void> scheduleNotification(Habit habit) async {
+  if (!habit.hasReminder || habit.reminderTime == null) return;
+  
+  await cancelNotification(habit.id);
+  
+  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    'habit_channel',
+    'Напоминания о привычках',
+    channelDescription: 'Напоминания о привычках',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
+  
+  const NotificationDetails details = NotificationDetails(
+    android: androidDetails,
+    iOS: DarwinNotificationDetails(),
+  );
+  
+  // Ежедневное повторяющееся уведомление
+  await _notifications.periodicallyShow(
+    int.parse(habit.id),
+    'Напоминание о привычке',
+    'Не забудьте: ${habit.name} ${habit.type == HabitType.good ? "✅" : "🚫"}',
+    RepeatInterval.daily,
+    details,
+  );
+}
 
   // Отменить уведомление
   Future<void> cancelNotification(String habitId) async {
-    await _notifications.cancel(int.parse(habitId));
+    try {
+      await _notifications.cancel(int.parse(habitId));
+    } catch (e) {
+      print('Ошибка отмены уведомления: $e');
+    }
   }
 
   // Отменить все уведомления

@@ -101,11 +101,11 @@ class _MyAppState extends State<MyApp> {
   void _createSampleHabits() {
     setState(() {
       _habits = [
-        Habit(id: '1', name: 'Выпить воду', icon: '💧', colorValue: Colors.blue.value, type: HabitType.good, completedDates: [], createdAt: DateTime.now()),
-        Habit(id: '2', name: 'Зарядка', icon: '🏃', colorValue: Colors.green.value, type: HabitType.good, completedDates: [], createdAt: DateTime.now()),
-        Habit(id: '3', name: 'Почитать книгу', icon: '📚', colorValue: Colors.orange.value, type: HabitType.good, completedDates: [], createdAt: DateTime.now()),
-        Habit(id: '4', name: 'Не курить', icon: '🚭', colorValue: Colors.red.value, type: HabitType.bad, completedDates: [], createdAt: DateTime.now()),
-        Habit(id: '5', name: 'Не есть сладкое', icon: '🍬', colorValue: Colors.red.value, type: HabitType.bad, completedDates: [], createdAt: DateTime.now()),
+        Habit(id: '1', name: 'Выпить воду', icon: '💧', colorValue: Colors.blue.value, type: HabitType.good, completedDates: [], createdAt: DateTime.now(), relapses: []),
+        Habit(id: '2', name: 'Зарядка', icon: '🏃', colorValue: Colors.green.value, type: HabitType.good, completedDates: [], createdAt: DateTime.now(), relapses: []),
+        Habit(id: '3', name: 'Почитать книгу', icon: '📚', colorValue: Colors.orange.value, type: HabitType.good, completedDates: [], createdAt: DateTime.now(), relapses: []),
+        Habit(id: '4', name: 'Не курить', icon: '🚭', colorValue: Colors.red.value, type: HabitType.bad, completedDates: [], createdAt: DateTime.now(), relapses: []),
+        Habit(id: '5', name: 'Не есть сладкое', icon: '🍬', colorValue: Colors.red.value, type: HabitType.bad, completedDates: [], createdAt: DateTime.now(), relapses: []),
       ];
     });
     _saveHabits();
@@ -225,36 +225,6 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> with SingleTick
   List<Habit> get _goodHabits => widget.habits.where((h) => h.type == HabitType.good).toList();
   List<Habit> get _badHabits => widget.habits.where((h) => h.type == HabitType.bad).toList();
 
-  Future<void> _exportData() async {
-  try {
-    final path = await ExportService.exportToText(
-      habits: widget.habits,
-      notes: widget.calendarNotes,
-    );
-    
-    if (path != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ Экспорт сохранен:\n$path'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 4),
-        ),
-      );
-    } else {
-      throw Exception('Экспорт не удался');
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Ошибка при экспорте'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-}
-
   @override
   void initState() {
     super.initState();
@@ -300,6 +270,36 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> with SingleTick
         ],
       ),
     );
+  }
+
+  Future<void> _exportData() async {
+    try {
+      final path = await ExportService.exportToText(
+        habits: widget.habits,
+        notes: widget.calendarNotes,
+      );
+      
+      if (path != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Экспорт сохранен:\n$path'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        throw Exception('Экспорт не удался');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Ошибка при экспорте'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -1293,7 +1293,7 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> with SingleTick
             child: Container(
               width: MediaQuery.of(context).size.width * 0.9,
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
               ),
               child: SingleChildScrollView(
                 child: Padding(
@@ -1494,6 +1494,7 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> with SingleTick
                                     createdAt: DateTime.now(),
                                     hasReminder: hasReminder,
                                     reminderTime: hasReminder ? selectedTime : null,
+                                    relapses: [],
                                   );
                                   
                                   widget.onAddHabit(newHabit);

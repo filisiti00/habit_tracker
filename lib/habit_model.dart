@@ -5,7 +5,7 @@ enum HabitType { good, bad }
 class Relapse {
   final DateTime date;
   final String reason;
-  final int streakLost; // сколько дней серии было на момент срыва
+  final int streakLost;
 
   Relapse({
     required this.date,
@@ -36,7 +36,7 @@ class Habit {
   final DateTime createdAt;
   bool hasReminder;
   TimeOfDay? reminderTime;
-  List<Relapse> relapses; // Добавляем список срывов
+  List<Relapse> relapses;
 
   Habit({
     required this.id,
@@ -83,7 +83,6 @@ class Habit {
     );
   }
 
-  // Для вредных привычек - добавить срыв
   void addRelapse(DateTime date, String reason) {
     final currentStreak = getStreak();
     relapses.add(Relapse(
@@ -91,18 +90,6 @@ class Habit {
       reason: reason,
       streakLost: currentStreak,
     ));
-    // Обнуляем серию, удаляя все completion за последние дни
-    // Для вредных привычек серия - это дни без срыва
-    _resetStreak();
-  }
-
-  void _resetStreak() {
-    // Очищаем completedDates, так как для вредных привычек 
-    // completedDates означают дни без срыва
-    final today = DateTime.now();
-    completedDates = completedDates.where((date) => 
-      date.isAfter(DateTime(today.year, today.month, today.day).subtract(const Duration(days: 1)))
-    ).toList();
   }
 
   int getStreak() {
@@ -143,9 +130,7 @@ class Habit {
   }
 
   int _calculateBadStreak() {
-    // Для вредных привычек серия - это дни без срыва
     if (relapses.isEmpty) {
-      // Если нет срывов, считаем дни с момента создания
       final daysSinceCreated = DateTime.now().difference(createdAt).inDays;
       return daysSinceCreated;
     }
@@ -169,7 +154,6 @@ class Habit {
       
       return completedDates.length / totalDays;
     } else {
-      // Для вредных - процент дней без срыва
       final daysSinceCreated = DateTime.now().difference(createdAt).inDays + 1;
       if (daysSinceCreated <= 0) return 0.0;
       
@@ -182,19 +166,12 @@ class Habit {
     }
   }
 
-  // Получить список срывов за период
-  List<Relapse> getRelapsesForPeriod(DateTime start, DateTime end) {
-    return relapses.where((r) => 
-      r.date.isAfter(start) && r.date.isBefore(end)
-    ).toList();
-  }
-
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'icon': icon,
     'colorValue': colorValue,
-    'type': type.toString(),
+    'type': type == HabitType.good ? 'good' : 'bad',
     'completedDates': completedDates.map((d) => d.toIso8601String()).toList(),
     'createdAt': createdAt.toIso8601String(),
     'hasReminder': hasReminder,
@@ -204,9 +181,11 @@ class Habit {
 
   factory Habit.fromJson(Map<String, dynamic> json) {
     TimeOfDay? reminderTime;
-    if (json['reminderTime'] != null) {
-      final parts = json['reminderTime'].split(':');
-      reminderTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    if (json['reminderTime'] != null && json['reminderTime'] is String) {
+      final parts = (json['reminderTime'] as String).split(':');
+      if (parts.length == 2) {
+        reminderTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      }
     }
     
     return Habit(
@@ -214,7 +193,7 @@ class Habit {
       name: json['name'],
       icon: json['icon'],
       colorValue: json['colorValue'],
-      type: json['type'] == 'HabitType.good' ? HabitType.good : HabitType.bad,
+      type: json['type'] == 'good' ? HabitType.good : HabitType.bad,
       completedDates: (json['completedDates'] as List)
           .map((d) => DateTime.parse(d))
           .toList(),
